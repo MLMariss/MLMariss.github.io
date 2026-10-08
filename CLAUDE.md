@@ -7,8 +7,10 @@
   `index.html`) for everything under this address, including QTPD at `/SteamQTPD/`. Keep that
   block and its `"name"` unchanged unless the owner asks; changing it resets what Google learned.
 - `robots.txt` here is the only one crawlers read for the whole `mlmariss.github.io` address.
-- The two cards (YouTube and QTPD) are deliberately **equal**: same style, side by side, YouTube
-  first. Do not promote one over the other.
+- Page hierarchy (owner's call): the **YouTube channel is the main profile** and sits on top as
+  the full-width card. Below it, "Free tools": equal cards side by side, QTPD first, then the
+  Dawnwalker skill tree planner. A new project gets a card in that section, and its sitemap a
+  `Sitemap:` line in `robots.txt`.
 
 ## Git handover — MANDATORY (same rules as SteamQTPD)
 
