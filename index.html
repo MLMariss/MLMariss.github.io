@@ -34,16 +34,19 @@
   *{box-sizing:border-box}
   body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans);
     line-height:1.55; min-height:100vh; display:flex; align-items:center; justify-content:center}
-  main{width:100%; max-width:560px; padding:48px 16px}
+  main{width:100%; max-width:880px; padding:48px 16px}
   h1{font-size:2rem; margin:0 0 4px}
   .lede{color:var(--muted); margin:0 0 32px}
-  a.card{display:block; text-decoration:none; color:inherit; background:var(--panel);
-    border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:12px}
+  /* Two equal cards side by side; stacked on phones with YouTube first. Same styling on purpose:
+     neither is the "main" link. */
+  .cards{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media (max-width:640px){ .cards{grid-template-columns:1fr} }
+  a.card{display:flex; flex-direction:column; text-decoration:none; color:inherit;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px}
   a.card:hover,a.card:focus-visible{border-color:var(--gold); outline:none}
-  a.card h2{margin:0 0 4px; font-size:1.2rem}
-  a.card.primary h2{color:var(--gold)}
+  a.card h2{margin:0 0 6px; font-size:1.2rem; color:var(--gold)}
   a.card p{margin:0; color:var(--muted)}
-  .cta{display:inline-block; margin-top:12px; font-weight:600; color:var(--gold)}
+  .cta{margin-top:auto; padding-top:16px; font-weight:600; color:var(--gold)}
 </style>
 </head>
 <body>
@@ -51,16 +54,19 @@
   <h1>MLMariss</h1>
   <p class="lede">PC gaming guides, deal hunting and the tools I build for it.</p>
 
-  <a class="card primary" href="https://mlmariss.github.io/SteamQTPD/">
-    <h2>QTPD: Quality Time Per Dollar</h2>
-    <p>A free tool that ranks Steam games by well-reviewed hours for your money. Filter thousands of games by price, sale, review score, length and tags.</p>
-    <span class="cta">Open QTPD →</span>
-  </a>
+  <div class="cards">
+    <a class="card" href="https://www.youtube.com/@MLMariss">
+      <h2>MLMariss on YouTube</h2>
+      <p>Guides, tips and deal breakdowns for survival, colony-sim, crafting and building games on PC.</p>
+      <span class="cta">Watch on YouTube →</span>
+    </a>
 
-  <a class="card" href="https://www.youtube.com/@MLMariss">
-    <h2>MLMariss on YouTube</h2>
-    <p>Guides, tips and deal breakdowns for survival, colony-sim, crafting and building games.</p>
-  </a>
+    <a class="card" href="https://mlmariss.github.io/SteamQTPD/">
+      <h2>QTPD: Quality Time Per Dollar</h2>
+      <p>A free tool that ranks Steam games by well-reviewed hours for your money. Filter thousands of games by price, sale, review score, length and tags.</p>
+      <span class="cta">Open QTPD →</span>
+    </a>
+  </div>
 </main>
 </body>
 </html>
