@@ -55,6 +55,9 @@ address. This repo only owns the root.
   structured data.
 - `robots.txt`: allows all crawlers and lists one `Sitemap:` line per project.
 - `sitemap.xml`: lists the home page only. Each project keeps its own sitemap in its own repo.
+- `favicon.svg`: the MLMariss "M" icon. Google shows one icon per site, taken from this home
+  page, so this is the icon next to every result under `mlmariss.github.io`, tools included.
+- `og-image.png`: the 1200×630 preview image shown when the home page is shared.
 - `.nojekyll`: serves the files as-is, without GitHub's Jekyll build.
 
 ## Adding a new project
