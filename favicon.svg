@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- MLMariss "M" drawn as a shape, not <text>: a favicon cannot load web fonts. Same navy and
+       gold as the page and the tools. -->
+  <rect width="64" height="64" rx="14" fill="#0e1320"/>
+  <path fill="#ffc24d" d="M12 48V16h7.5L32 31.5 44.5 16H52v32h-7V28.5L32 44 19 28.5V48Z"/>
+</svg>
