@@ -54,9 +54,15 @@ address. This repo only owns the root.
   verification tag (removing it un-verifies the property), and the `WebSite` + `Person`
   structured data.
 - `robots.txt`: allows all crawlers and lists one `Sitemap:` line per project.
-- `sitemap.xml`: lists the home page only. Each project keeps its own sitemap in its own repo.
+- `sitemap.xml`: lists the home page only, with `<lastmod>` set to the date of the last real
+  content change (update it when the page's text changes, not on every edit). Each project keeps
+  its own sitemap in its own repo.
+- `404.html`: the "page not found" page for mistyped addresses under `mlmariss.github.io`.
+  GitHub Pages sends it with a real 404 status. It links home, the channel and every tool, with
+  absolute links because it can be served at any path.
 - `favicon.svg`: the MLMariss "M" icon. Google shows one icon per site, taken from this home
   page, so this is the icon next to every result under `mlmariss.github.io`, tools included.
+- `apple-touch-icon.png`: the same "M" as a 180×180 PNG, for iPhones and apps that ignore SVG icons.
 - `og-image.png`: the 1200×630 preview image shown when the home page is shared.
 - `.nojekyll`: serves the files as-is, without GitHub's Jekyll build.
 
@@ -65,7 +71,7 @@ address. This repo only owns the root.
 1. Publish the project from its own repo with GitHub Pages (it appears at
    `https://mlmariss.github.io/<RepoName>/`).
 2. Add a card to the "Free tools" section of `index.html` and a short paragraph under
-   "About the tools".
+   "About the tools", and a link in `404.html`.
 3. Add its sitemap to `robots.txt`: `Sitemap: https://mlmariss.github.io/<RepoName>/sitemap.xml`.
 4. Mention it in the `Person` description and the page's meta description if it changes what
    MLMariss is known for.

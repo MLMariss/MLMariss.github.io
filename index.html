@@ -20,6 +20,10 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://mlmariss.github.io/og-image.png" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<!-- iOS and some apps ignore SVG icons: this is the home-screen / share-sheet icon. -->
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="theme-color" content="#0e1320" />
+<meta name="color-scheme" content="dark" />
 <!-- Google reads a site name only from the domain's home page, which is why this page exists:
      without it, results under mlmariss.github.io/ show a generic "GitHub Pages" label. Keep the
      WebSite "name" stable; changing it resets what Google has learned. The Person's sameAs ties
@@ -54,7 +58,7 @@
   :root{
     --bg:#0e1320; --panel:#192133; --line:#2c3858;
     --text:#f1f4fb; --muted:#b9c4dd; --gold:#ffc24d; --gold-deep:#b98a28;
-    --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
   }
   *{box-sizing:border-box}
   body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans);
@@ -81,6 +85,8 @@
   .about p{margin:0 0 10px}
   .about a{color:var(--gold)}
   .cta{margin-top:auto; padding-top:16px; font-weight:600; color:var(--gold)}
+  footer{margin-top:40px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:.9rem}
+  footer a{color:var(--gold)}
 </style>
 </head>
 <body>
@@ -131,6 +137,11 @@
       Vampirism trees. Spend points with the game's real rules (prerequisites, Corruption gates,
       manuals), pick an ultimate, and share the finished build as a link.</p>
   </section>
+
+  <footer>
+    <p>Made by MLMariss · <a href="https://www.youtube.com/@MLMariss">YouTube</a> ·
+      <a href="https://github.com/MLMariss">GitHub</a> (source code, and the place to report a bug in a tool)</p>
+  </footer>
 </main>
 </body>
 </html>
