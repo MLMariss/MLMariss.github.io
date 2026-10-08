@@ -42,7 +42,11 @@ address. This repo only owns the root.
 
 ### Page layout (owner's call)
 
-- **Top:** the YouTube channel as one full-width card. It is the main profile.
+- **Top:** the YouTube channel as one full-width card. It is the main profile: avatar, links to
+  the channel, and a click-to-play panel for the uploads playlist (`UULF…`, long videos, newest
+  first, so it never needs updating). Nothing from YouTube loads until someone clicks it; then a
+  `youtube-nocookie.com` player replaces the panel. Without JavaScript it is a plain link to the
+  playlist.
 - **"Free tools":** equal cards side by side (stacked on phones), QTPD first, then the
   Dawnwalker planner.
 - **About:** plain text describing the channel and each tool, with links. This is the text
@@ -63,6 +67,8 @@ address. This repo only owns the root.
 - `favicon.svg`: the MLMariss "M" icon. Google shows one icon per site, taken from this home
   page, so this is the icon next to every result under `mlmariss.github.io`, tools included.
 - `apple-touch-icon.png`: the same "M" as a 180×180 PNG, for iPhones and apps that ignore SVG icons.
+- `avatar.jpg`: the channel picture (256×256), shown in the YouTube card and used as the
+  `Person` image in the structured data.
 - `og-image.png`: the 1200×630 preview image shown when the home page is shared.
 - `.nojekyll`: serves the files as-is, without GitHub's Jekyll build.
 
