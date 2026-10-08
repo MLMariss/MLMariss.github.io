@@ -6,23 +6,47 @@
 <title>MLMariss: PC gaming guides and QTPD, the Steam value tool</title>
 <meta name="description" content="Home of MLMariss: PC gaming videos on YouTube and QTPD (Quality Time Per Dollar), a free tool that ranks Steam games by well-reviewed hours for your money." />
 <link rel="canonical" href="https://mlmariss.github.io/" />
+<!-- Google Search Console ownership check. Keep it: removing it un-verifies the property. -->
+<meta name="google-site-verification" content="IvYCR0YKDXf-n9wctR5p3lpm84IUgNj_r0MvaYAJ7HE" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="MLMariss" />
 <meta property="og:title" content="MLMariss: PC gaming guides and QTPD" />
 <meta property="og:description" content="PC gaming videos on YouTube and QTPD, a free tool that ranks Steam games by well-reviewed hours for your money." />
 <meta property="og:url" content="https://mlmariss.github.io/" />
 <meta property="og:image" content="https://mlmariss.github.io/SteamQTPD/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="QTPD: quality time per dollar, Steam games ranked by value" />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="icon" type="image/svg+xml" href="https://mlmariss.github.io/SteamQTPD/favicon.svg" />
-<!-- Site name for Google. Google reads the site name only from the domain's home page, which
-     is why this page exists: without it, results under mlmariss.github.io/ show a generic
-     "GitHub Pages" label. Keep "name" stable; changing it resets what Google has learned. -->
+<!-- Google reads a site name only from the domain's home page, which is why this page exists:
+     without it, results under mlmariss.github.io/ show a generic "GitHub Pages" label. Keep the
+     WebSite "name" stable; changing it resets what Google has learned. The Person's sameAs ties
+     this site, the YouTube channel and the GitHub account together as one MLMariss. Describe
+     only what the page shows. -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "MLMariss",
-  "url": "https://mlmariss.github.io/"
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://mlmariss.github.io/#website",
+      "name": "MLMariss",
+      "url": "https://mlmariss.github.io/",
+      "publisher": { "@id": "https://mlmariss.github.io/#person" }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://mlmariss.github.io/#person",
+      "name": "MLMariss",
+      "url": "https://mlmariss.github.io/",
+      "description": "PC gaming YouTube creator covering survival, colony-sim, crafting and vehicle-building games, and maker of QTPD, a free Steam value tool.",
+      "sameAs": [
+        "https://www.youtube.com/@MLMariss",
+        "https://github.com/MLMariss"
+      ]
+    }
+  ]
 }
 </script>
 <style>
@@ -46,6 +70,10 @@
   a.card:hover,a.card:focus-visible{border-color:var(--gold); outline:none}
   a.card h2{margin:0 0 6px; font-size:1.2rem; color:var(--gold)}
   a.card p{margin:0; color:var(--muted)}
+  .about{margin-top:40px; color:var(--muted)}
+  .about h2{color:var(--text); font-size:1.1rem; margin:24px 0 6px}
+  .about p{margin:0 0 10px}
+  .about a{color:var(--gold)}
   .cta{margin-top:auto; padding-top:16px; font-weight:600; color:var(--gold)}
 </style>
 </head>
@@ -67,6 +95,21 @@
       <span class="cta">Open QTPD →</span>
     </a>
   </div>
+
+  <section class="about">
+    <h2>About the channel</h2>
+    <p>MLMariss is a PC gaming channel on YouTube about survival, colony-sim, crafting and
+      vehicle-building games: in-depth guides and build tutorials (Scrap Mechanic among them),
+      tips, and breakdowns of which games are worth buying in each Steam sale and festival.</p>
+
+    <h2>What QTPD does</h2>
+    <p><a href="https://mlmariss.github.io/SteamQTPD/">QTPD (Quality Time Per Dollar)</a> answers one
+      question: which Steam games give you the most well-reviewed hours for your money? It combines
+      each game's review score with how long it takes to play, divides by the current price, and ranks
+      thousands of Steam games by the result. You can filter by price, discount, review score,
+      length and tags, so it works for a big Steam sale as well as for finding a cheap game to
+      sink a weekend into. It is free and needs no account.</p>
+  </section>
 </main>
 </body>
 </html>
