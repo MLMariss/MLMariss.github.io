@@ -20,6 +20,10 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://mlmariss.github.io/og-image.png" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<!-- iOS and some apps ignore SVG icons: this is the home-screen / share-sheet icon. -->
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="theme-color" content="#0e1320" />
+<meta name="color-scheme" content="dark" />
 <!-- Google reads a site name only from the domain's home page, which is why this page exists:
      without it, results under mlmariss.github.io/ show a generic "GitHub Pages" label. Keep the
      WebSite "name" stable; changing it resets what Google has learned. The Person's sameAs ties
@@ -41,9 +45,11 @@
       "@id": "https://mlmariss.github.io/#person",
       "name": "MLMariss",
       "url": "https://mlmariss.github.io/",
+      "image": "https://mlmariss.github.io/avatar.jpg",
       "description": "PC gaming YouTube creator covering survival, colony-sim, crafting and vehicle-building games, and maker of free game tools: QTPD, a Steam value ranking, and a skill tree planner for The Blood of Dawnwalker.",
       "sameAs": [
         "https://www.youtube.com/@MLMariss",
+        "https://www.youtube.com/channel/UCApjzYvBluJ-CB52BfOxhyQ",
         "https://github.com/MLMariss"
       ]
     }
@@ -54,7 +60,7 @@
   :root{
     --bg:#0e1320; --panel:#192133; --line:#2c3858;
     --text:#f1f4fb; --muted:#b9c4dd; --gold:#ffc24d; --gold-deep:#b98a28;
-    --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
   }
   *{box-sizing:border-box}
   body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans);
@@ -66,13 +72,35 @@
      The tools sit below it as equal cards side by side (stacked on phones). */
   .cards{display:grid; grid-template-columns:1fr 1fr; gap:16px}
   @media (max-width:640px){ .cards{grid-template-columns:1fr} }
-  a.card{display:flex; flex-direction:column; text-decoration:none; color:inherit;
-    background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px}
+  a.card{display:flex; flex-direction:column; text-decoration:none; color:inherit}
   a.card:hover,a.card:focus-visible{border-color:var(--gold); outline:none}
-  a.card h2,a.card h3{margin:0 0 6px; font-size:1.2rem; color:var(--gold)}
-  a.card p{margin:0; color:var(--muted)}
-  a.card.channel{padding:28px; border-color:var(--gold-deep)}
-  a.card.channel h2{font-size:1.5rem}
+  .card h2,.card h3{margin:0 0 6px; font-size:1.2rem; color:var(--gold)}
+  .card p{margin:0; color:var(--muted)}
+  /* The channel card holds two links and a player, so it is a box, not one big link. */
+  .channel{display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:center;
+    padding:28px; border-color:var(--gold-deep)}
+  @media (max-width:640px){ .channel{grid-template-columns:1fr; padding:20px} }
+  .channel-head{display:flex; align-items:center; gap:14px; margin-bottom:10px}
+  .channel h2{font-size:1.5rem; margin:0}
+  .channel h2 a{color:inherit; text-decoration:none}
+  .channel h2 a:hover,.channel h2 a:focus-visible{text-decoration:underline}
+  .avatar{width:72px; height:72px; flex:none; border-radius:50%; border:2px solid var(--gold-deep)}
+  .channel .cta{display:inline-block; text-decoration:none}
+  .channel .cta:hover,.channel .cta:focus-visible{text-decoration:underline}
+  /* Click-to-play: a plain link to the uploads playlist until clicked, then the script swaps in
+     YouTube's player. Nothing from YouTube loads before the click, and without JavaScript the
+     link still works. */
+  .player{aspect-ratio:16/9; border-radius:8px; overflow:hidden; border:1px solid var(--line);
+    background:#0a0f1a}
+  .player:focus-within,.player:hover{border-color:var(--gold)}
+  .player iframe{display:block; width:100%; height:100%; border:0}
+  .play{height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:6px; padding:12px; text-align:center; text-decoration:none; color:var(--text); outline:none;
+    background:radial-gradient(circle at 50% 38%, #24325c, #0a0f1a 72%)}
+  .play svg{width:60px; height:60px; margin-bottom:4px}
+  .play-label{font-weight:600}
+  .play-note{font-size:.8rem; color:var(--muted)}
   .section-head{margin:40px 0 4px; font-size:1.3rem}
   .section-lede{margin:0 0 16px; color:var(--muted)}
   .about{margin-top:40px; color:var(--muted)}
@@ -81,6 +109,8 @@
   .about p{margin:0 0 10px}
   .about a{color:var(--gold)}
   .cta{margin-top:auto; padding-top:16px; font-weight:600; color:var(--gold)}
+  footer{margin-top:40px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:.9rem}
+  footer a{color:var(--gold)}
 </style>
 </head>
 <body>
@@ -88,11 +118,23 @@
   <h1>MLMariss</h1>
   <p class="lede">PC gaming guides, deal hunting and the tools I build for it.</p>
 
-  <a class="card channel" href="https://www.youtube.com/@MLMariss">
-    <h2>MLMariss on YouTube</h2>
-    <p>Guides, tips and deal breakdowns for survival, colony-sim, crafting and building games on PC.</p>
-    <span class="cta">Watch on YouTube →</span>
-  </a>
+  <section class="card channel" aria-labelledby="channel-title">
+    <div>
+      <div class="channel-head">
+        <img class="avatar" src="/avatar.jpg" width="72" height="72" alt="MLMariss" />
+        <h2 id="channel-title"><a href="https://www.youtube.com/@MLMariss">MLMariss on YouTube</a></h2>
+      </div>
+      <p>Guides, tips and deal breakdowns for survival, colony-sim, crafting and building games on PC.</p>
+      <a class="cta" href="https://www.youtube.com/@MLMariss">Watch on YouTube →</a>
+    </div>
+    <div class="player">
+      <a class="play" id="play-latest" href="https://www.youtube.com/playlist?list=UULFApjzYvBluJ-CB52BfOxhyQ">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#ffc24d"/><path d="M26 20v24l19-12z" fill="#0e1320"/></svg>
+        <span class="play-label">Play the latest videos</span>
+        <span class="play-note">Plays here. YouTube's player loads when you click.</span>
+      </a>
+    </div>
+  </section>
 
   <h2 class="section-head">Free tools</h2>
   <p class="section-lede">Built alongside the videos. Free, no account needed.</p>
@@ -131,6 +173,26 @@
       Vampirism trees. Spend points with the game's real rules (prerequisites, Corruption gates,
       manuals), pick an ultimate, and share the finished build as a link.</p>
   </section>
+
+  <footer>
+    <p>Made by MLMariss · <a href="https://www.youtube.com/@MLMariss">YouTube</a> ·
+      <a href="https://github.com/MLMariss">GitHub</a> (source code, and the place to report a bug in a tool)</p>
+  </footer>
 </main>
+<script>
+  // Click-to-play: swap the playlist link for YouTube's player only when someone asks for it.
+  // The uploads playlist (UULF…) is the channel's long videos, newest first, so it never needs updating.
+  document.getElementById("play-latest").addEventListener("click", function (e) {
+    e.preventDefault();
+    var f = document.createElement("iframe");
+    f.src = "https://www.youtube-nocookie.com/embed/videoseries?list=UULFApjzYvBluJ-CB52BfOxhyQ&autoplay=1";
+    f.title = "Latest MLMariss videos";
+    f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+    f.allowFullscreen = true;
+    // YouTube's embed refuses to play when the browser sends no referrer.
+    f.referrerPolicy = "strict-origin-when-cross-origin";
+    this.replaceWith(f);
+  });
+</script>
 </body>
 </html>
