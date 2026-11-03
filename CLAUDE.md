@@ -17,6 +17,13 @@
 **The owner's single control point is the MERGE.** Everything up to the push is Claude's job.
 
 - **Never push to `main`.** Work on a feature branch; the owner merges the pull request.
+  - **The one exception (owner, 2026-11-03):** `.github/workflows/latest-video.yml` commits
+    `latest-video.jpg` and `latest-video.json` straight to `main` as `github-actions[bot]`,
+    and only when the newest video's id has changed. It stages those two files by name. Do
+    not widen it to other files, and do not add another workflow that writes to `main`,
+    without asking. It covers that bot only, never Claude.
+  - Pull `main` before branching. The bot may have moved those two files since your last
+    clone.
 - **Ask once, then push.** Finish the whole task, commit, then ask "task is done — push?".
   Never push mid-task. If the owner says "commit and push" up front, that is the approval.
 - **Never merge a pull request.** That is the owner's step.
