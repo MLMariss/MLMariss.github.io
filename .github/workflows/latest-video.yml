@@ -1,0 +1,95 @@
+name: Latest video thumbnail -> latest-video.jpg + latest-video.json
+
+# The home page's click-to-play panel shows the newest long video's thumbnail and title.
+# Nothing from YouTube may load before a visitor clicks, so the page cannot ask YouTube for
+# them: this job copies them into the repo instead, and the page reads its own copies.
+#
+# THE ONE EXCEPTION TO "NOTHING REACHES MAIN EXCEPT THE OWNER'S MERGES" (owner, 2026-11-03):
+# on the schedule this job commits latest-video.jpg and latest-video.json straight to main,
+# as github-actions[bot], and only when the newest video's id has changed. It stages those
+# two files by name and nothing else. See CLAUDE.md and README.md.
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"   # every 3 hours (GitHub may deliver a scheduled run late)
+  workflow_dispatch:          # run it now from the Actions tab
+    inputs:
+      force:
+        description: "Rewrite both files even if the video is unchanged (picks up an edited title or thumbnail)"
+        type: boolean
+        default: false
+  # workflow_dispatch only sees workflows that are already on main, so a branch that changes
+  # this job could not run it before merging. This trigger runs it when its own files change
+  # on a claude/ branch; the files it writes are committed to that branch, so the pull
+  # request carries real ones. Pushes made by this job do not re-trigger it (GitHub never
+  # starts workflows from GITHUB_TOKEN pushes, and those pushes touch neither path below).
+  push:
+    branches: ["claude/**"]
+    paths:
+      - .github/workflows/latest-video.yml
+      - .github/scripts/latest_video.py
+
+permissions:
+  contents: write             # commits latest-video.jpg + latest-video.json
+
+concurrency:
+  group: latest-video         # two runs never overlap
+  cancel-in-progress: false
+
+jobs:
+  latest-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Pillow
+        run: pip install "pillow>=10"
+
+      - name: Fetch the newest long video
+        run: python .github/scripts/latest_video.py ${{ inputs.force && '--force' || '' }}
+
+      - name: Commit if the video changed
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          FILES="latest-video.jpg latest-video.json"
+          git add -- $FILES
+          if git diff --cached --quiet; then
+            echo "No change to commit."
+            exit 0
+          fi
+          ID=$(python -c "import json; print(json.load(open('latest-video.json'))['id'])")
+          MSG="Latest video thumbnail: $ID"
+          # Retry when the branch moved on since checkout (e.g. a merge landed meanwhile):
+          # keep our two files, take the branch's newest commit, commit them on top again.
+          SAVE="$RUNNER_TEMP/latest-video"
+          mkdir -p "$SAVE"
+          cp $FILES "$SAVE/"
+          for attempt in 1 2 3; do
+            git commit -q -m "$MSG"
+            if git push origin "HEAD:refs/heads/$BRANCH"; then
+              echo "Committed $ID to $BRANCH."
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt); refreshing $BRANCH and retrying."
+            sleep $((attempt * 5))
+            git fetch --depth=1 origin "$BRANCH"
+            git reset -q --hard FETCH_HEAD
+            for f in $FILES; do cp "$SAVE/$f" "$f"; done
+            git add -- $FILES
+            if git diff --cached --quiet; then
+              echo "$BRANCH already has these files."
+              exit 0
+            fi
+          done
+          echo "Could not push after 3 attempts." >&2
+          exit 1

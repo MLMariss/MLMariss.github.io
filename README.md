@@ -44,9 +44,13 @@ address. This repo only owns the root.
 
 - **Top:** the YouTube channel as one full-width card. It is the main profile: avatar, links to
   the channel, and a click-to-play panel for the uploads playlist (`UULF…`, long videos, newest
-  first, so it never needs updating). Nothing from YouTube loads until someone clicks it; then a
-  `youtube-nocookie.com` player replaces the panel. Without JavaScript it is a plain link to the
-  playlist.
+  first). The panel shows the newest long video's thumbnail and title, the same video the
+  player starts with. Both come from this site's own copies (`latest-video.jpg`,
+  `latest-video.json`), which a scheduled workflow refreshes, so nothing from YouTube
+  (`youtube.com`, `ytimg.com`, `googlevideo.com`) loads until someone clicks. Then a
+  `youtube-nocookie.com` player replaces the panel. Without JavaScript the panel still shows the
+  thumbnail and is a plain link to the playlist; the title needs JavaScript, and without it (or
+  if `latest-video.json` cannot be read) the label reads "Play the latest videos".
 - **"Free tools":** equal cards side by side (stacked on phones), QTPD first, then the
   Dawnwalker planner.
 - **About:** plain text describing the channel and each tool, with links. This is the text
@@ -72,6 +76,21 @@ address. This repo only owns the root.
 - `og-image.png`: the 1200×630 preview image shown when the home page is shared.
 - `.nojekyll`: serves the files as-is, without GitHub's Jekyll build.
 
+### Newest-video files (written by a workflow, not by hand)
+
+- `latest-video.jpg`: the newest long video's thumbnail, copied from YouTube and resized to
+  1280×720 (JPEG quality 82). The background of the click-to-play panel.
+- `latest-video.json`: that video's `id`, `title`, `published` date and `url`. The page reads the
+  title from it for the panel's label.
+- `.github/workflows/latest-video.yml`: refreshes both files every 3 hours, or on demand from the
+  Actions tab ("Run workflow"; tick *force* to pick up a title or thumbnail edited after upload).
+  It commits only when the newest video's id has changed. It also runs when its own files change
+  on a `claude/` branch, so a pull request that changes it carries real output.
+- `.github/scripts/latest_video.py`: what the workflow runs. It reads the feed of the long-videos
+  playlist (`UULF…`) and falls back to the channel feed (skipping Shorts) when that fails or is
+  empty. It takes `maxresdefault.jpg`, or `hqdefault.jpg` (cropped to 16:9) when the larger
+  one is missing.
+
 ## Adding a new project
 
 1. Publish the project from its own repo with GitHub Pages (it appears at
@@ -85,3 +104,8 @@ address. This repo only owns the root.
 ## Publishing
 
 `main` is live. Changes go through a branch and a pull request; the owner merges.
+
+**One exception (owner, 2026-11-03):** the `latest-video.yml` workflow commits
+`latest-video.jpg` and `latest-video.json` straight to `main` as `github-actions[bot]` when a new
+long video appears. It stages those two files by name and nothing else. Each such commit
+redeploys the site.
