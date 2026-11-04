@@ -7,7 +7,9 @@ YouTube before the visitor clicks: the thumbnail is a copy hosted on this site.
 
   1. Read the feed of the long-videos uploads playlist (UULF..., the same playlist the panel
      plays, newest first). If that fails or is empty, read the channel feed instead and skip
-     Shorts.
+     Shorts. YouTube's feed server sometimes answers 404 for every feed for a while, so each
+     feed gets TRIES tries before it counts as failed. When both fail, the run fails with an
+     error annotation and both files stay as they are.
   2. Take the newest entry. If its video id equals the one in latest-video.json, stop and
      leave both files untouched, so the workflow has nothing to commit.
   3. Download maxresdefault.jpg (hqdefault.jpg when that is missing or is YouTube's 120x90
@@ -25,6 +27,7 @@ import io
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -47,6 +50,8 @@ HEADERS = {
     "Cookie": "SOCS=CAI",
 }
 TIMEOUT = 30
+TRIES = 3                # per feed
+RETRY_WAITS = (20, 40)   # seconds to wait before the 2nd and 3rd try
 SIZE = (1280, 720)
 QUALITY = 82
 JPG_NAME = "latest-video.jpg"
@@ -89,7 +94,25 @@ def is_short(video_id):
         raise RuntimeError("Shorts check for %s answered HTTP %s" % (video_id, e.code))
 
 
-def read_feed(url):
+class FeedsUnavailable(RuntimeError):
+    """Neither YouTube feed could be read, even after retrying."""
+
+
+def read_feed(url, label):
+    """read_feed_once, tried up to TRIES times. Raises the last error when every try fails."""
+    for attempt in range(1, TRIES + 1):
+        try:
+            return read_feed_once(url)
+        except Exception as exc:  # noqa: BLE001 (HTTP errors, network errors, bad XML)
+            if attempt == TRIES:
+                raise
+            wait = RETRY_WAITS[attempt - 1]
+            log("%s feed failed (%s), try %d of %d; retrying in %ds"
+                % (label, exc, attempt, TRIES, wait))
+            time.sleep(wait)
+
+
+def read_feed_once(url):
     """Return the feed's entries as dicts, newest first. Raises when the feed is unusable."""
     status, body = get(url)
     if status != 200:
@@ -110,15 +133,22 @@ def read_feed(url):
 
 def newest_video():
     try:
-        entries = read_feed(PLAYLIST_FEED)
+        entries = read_feed(PLAYLIST_FEED, "Playlist")
         if entries:
             log("Playlist feed: %d entries" % len(entries))
             return entries[0]
+        playlist_problem = "empty"
         log("Playlist feed is empty; falling back to the channel feed")
     except Exception as exc:  # noqa: BLE001 (any failure means: use the fallback)
+        playlist_problem = str(exc)
         log("Playlist feed failed (%s); falling back to the channel feed" % exc)
 
-    entries = read_feed(CHANNEL_FEED)
+    try:
+        entries = read_feed(CHANNEL_FEED, "Channel")
+    except Exception as exc:  # noqa: BLE001
+        raise FeedsUnavailable(
+            "Both YouTube feeds failed after %d tries each (playlist: %s; channel: %s)"
+            % (TRIES, playlist_problem, exc)) from exc
     log("Channel feed: %d entries" % len(entries))
     for entry in entries:
         if is_short(entry["id"]):
@@ -171,7 +201,14 @@ def main():
     jpg_path = os.path.join(args.out, JPG_NAME)
     json_path = os.path.join(args.out, JSON_NAME)
 
-    video = newest_video()
+    try:
+        video = newest_video()
+    except FeedsUnavailable as exc:
+        # An ::error:: line becomes the run's annotation, so the failure email says why.
+        print("::error title=YouTube feeds unavailable::%s. Both files were left unchanged; "
+              "this is usually a YouTube outage, and the next scheduled run tries again." % exc,
+              flush=True)
+        return 1
     log("Newest: %s  %s  %r" % (video["id"], video["published"], video["title"]))
 
     old_id = None

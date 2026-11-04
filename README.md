@@ -88,7 +88,10 @@ address. This repo only owns the root.
   on a `claude/` branch, so a pull request that changes it carries real output.
 - `.github/scripts/latest_video.py`: what the workflow runs. It reads the feed of the long-videos
   playlist (`UULF…`) and falls back to the channel feed (skipping Shorts) when that fails or is
-  empty. It takes `maxresdefault.jpg`, or `hqdefault.jpg` (cropped to 16:9) when the larger
+  empty. YouTube's feed server sometimes answers 404 to every feed for a while, so each feed gets
+  three tries (20 s and 40 s apart). When both feeds still fail, the run fails with a
+  "YouTube feeds unavailable" annotation, both files stay unchanged, and the next scheduled run
+  tries again. It takes `maxresdefault.jpg`, or `hqdefault.jpg` (cropped to 16:9) when the larger
   one is missing.
 
 ## Adding a new project
