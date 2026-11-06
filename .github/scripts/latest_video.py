@@ -8,11 +8,14 @@ YouTube before the visitor clicks: the thumbnail is a copy hosted on this site.
   1. Read the feed of the long-videos uploads playlist (UULF..., the same playlist the panel
      plays, newest first). If that fails or is empty, read the channel feed instead and skip
      Shorts.
-  2. Take the newest entry. If its video id equals the one in latest-video.json, stop and
-     leave both files untouched, so the workflow has nothing to commit.
-  3. Download maxresdefault.jpg (hqdefault.jpg when that is missing or is YouTube's 120x90
-     placeholder), crop it to 16:9, resize to 1280x720 and save it at JPEG quality 82.
-  4. Write latest-video.json: {"id", "title", "published", "url"}.
+  2. Take the newest entry and download its thumbnail: maxresdefault.jpg (hqdefault.jpg when
+     that is missing or is YouTube's 120x90 placeholder).
+  3. Compare with latest-video.json: the video id, the title, and the thumbnail's fingerprint
+     (the SHA-256 of the image YouTube served). If all three match, stop and leave both files
+     untouched, so the workflow has nothing to commit. So a title or thumbnail edited after
+     upload is picked up on the next run, without --force.
+  4. Crop the thumbnail to 16:9, resize it to 1280x720 and save it at JPEG quality 82.
+  5. Write latest-video.json: {"id", "title", "published", "url", "thumbnail_sha256"}.
 
 When YouTube does not answer (its feed server answers 404 to every feed for hours at a time,
 and the Shorts check or thumbnail can fail the same way), both files stay as they are. With
@@ -21,8 +24,7 @@ for that many hours, in which case it fails. --state is the file that remembers 
 last answered; the workflow keeps it between runs in the Actions cache.
 
 Usage: python latest_video.py [--force] [--out DIR] [--state FILE] [--grace HOURS]
-  --force  rewrite both files even when the video id has not changed (to pick up a title or
-           thumbnail edited after upload)
+  --force  rewrite both files even when nothing has changed
   --out    folder to write into (default: the current folder, the repo root in the workflow)
   --state  file holding the time YouTube last answered (written when it answers)
   --grace  hours YouTube may stay silent before a run fails (default 0: fail at once)
@@ -30,6 +32,7 @@ Usage: python latest_video.py [--force] [--out DIR] [--state FILE] [--grace HOUR
 
 import argparse
 import datetime
+import hashlib
 import http.client
 import io
 import json
@@ -163,7 +166,8 @@ def newest_video():
 
 
 def download_thumbnail(video_id):
-    """Return the best thumbnail as a PIL image: maxresdefault, else hqdefault."""
+    """Return the best thumbnail as (bytes YouTube served, PIL image): maxresdefault, else
+    hqdefault."""
     for name in ("maxresdefault", "hqdefault"):
         url = "https://i.ytimg.com/vi/%s/%s.jpg" % (video_id, name)
         status, body = get(url)
@@ -176,7 +180,7 @@ def download_thumbnail(video_id):
             log("%s: 120x90 placeholder" % name)
             continue
         log("%s: %dx%d" % (name, img.width, img.height))
-        return img
+        return body, img
     raise Unavailable("no thumbnail for %s yet" % video_id)
 
 
@@ -254,6 +258,26 @@ def youtube_unavailable(problem, state_path, grace_hours):
     return 1
 
 
+def what_changed(old, video, thumb_sha, jpg_exists, force):
+    """What differs between latest-video.json (old) and YouTube now, as short labels for the
+    log and the commit message. Empty when both files are up to date."""
+    if old.get("id") != video["id"]:
+        return ["new video"]
+    changes = []
+    if (old.get("title") or "").strip() != video["title"]:
+        changes.append("title changed")
+    if not old.get("thumbnail_sha256"):
+        # Files written before fingerprints existed: record one (and refresh the image).
+        changes.append("thumbnail fingerprint added")
+    elif old["thumbnail_sha256"] != thumb_sha:
+        changes.append("thumbnail changed")
+    if not jpg_exists:
+        changes.append("thumbnail file missing")
+    if force and not changes:
+        changes.append("forced")
+    return changes
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true")
@@ -265,27 +289,33 @@ def main():
     jpg_path = os.path.join(args.out, JPG_NAME)
     json_path = os.path.join(args.out, JSON_NAME)
 
-    old_id = None
+    old = {}
     try:
         with open(json_path, encoding="utf-8") as f:
-            old_id = json.load(f).get("id")
+            old = json.load(f)
     except (OSError, ValueError):
         pass
+    if not isinstance(old, dict):
+        old = {}
 
     try:
         video = newest_video()
         log("Newest: %s  %s  %r" % (video["id"], video["published"], video["title"]))
-        unchanged = old_id == video["id"] and os.path.exists(jpg_path) and not args.force
-        thumb = None if unchanged else to_16x9(download_thumbnail(video["id"]))
+        raw, img = download_thumbnail(video["id"])
     except Unavailable as exc:
         return youtube_unavailable(str(exc), args.state, args.grace)
     write_last_answer(args.state, now_utc())
 
-    if unchanged:
-        log("Same video as latest-video.json; nothing to do")
+    thumb_sha = hashlib.sha256(raw).hexdigest()
+    changes = what_changed(old, video, thumb_sha, os.path.exists(jpg_path), args.force)
+    if not changes:
+        log("Same video, title and thumbnail as latest-video.json; nothing to do")
         return 0
+    reason = ", ".join(changes)
+    log("Rewriting both files: %s" % reason)
+    set_output("reason", reason)
 
-    thumb.save(jpg_path, "JPEG", quality=QUALITY, optimize=True, progressive=True)
+    to_16x9(img).save(jpg_path, "JPEG", quality=QUALITY, optimize=True, progressive=True)
     log("Wrote %s (%d bytes)" % (jpg_path, os.path.getsize(jpg_path)))
 
     data = {
@@ -293,6 +323,7 @@ def main():
         "title": video["title"],
         "published": video["published"],
         "url": "https://www.youtube.com/watch?v=" + video["id"],
+        "thumbnail_sha256": thumb_sha,
     }
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)

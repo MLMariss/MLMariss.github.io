@@ -6,8 +6,9 @@ name: Latest video thumbnail -> latest-video.jpg + latest-video.json
 #
 # THE ONE EXCEPTION TO "NOTHING REACHES MAIN EXCEPT THE OWNER'S MERGES" (owner, 2026-11-03):
 # on the schedule this job commits latest-video.jpg and latest-video.json straight to main,
-# as github-actions[bot], and only when the newest video's id has changed. It stages those
-# two files by name and nothing else. See CLAUDE.md and README.md.
+# as github-actions[bot], and only when the newest video, its title or its thumbnail has
+# changed (title and thumbnail added by the owner, 2026-11-06). It stages those two files by
+# name and nothing else. See CLAUDE.md and README.md.
 
 on:
   schedule:
@@ -15,7 +16,7 @@ on:
   workflow_dispatch:          # run it now from the Actions tab
     inputs:
       force:
-        description: "Rewrite both files even if the video is unchanged (picks up an edited title or thumbnail)"
+        description: "Rewrite both files even if YouTube shows no change (edited titles and thumbnails are picked up without it)"
         type: boolean
         default: false
   # workflow_dispatch only sees workflows that are already on main, so a branch that changes
@@ -79,9 +80,10 @@ jobs:
           path: ${{ runner.temp }}/youtube-last-answer.txt
           key: youtube-last-answer-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Commit if the video changed
+      - name: Commit if the video, its title or its thumbnail changed
         env:
           BRANCH: ${{ github.ref_name }}
+          REASON: ${{ steps.fetch.outputs.reason }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -92,7 +94,7 @@ jobs:
             exit 0
           fi
           ID=$(python -c "import json; print(json.load(open('latest-video.json'))['id'])")
-          MSG="Latest video thumbnail: $ID"
+          MSG="Latest video thumbnail: $ID${REASON:+ ($REASON)}"
           # Retry when the branch moved on since checkout (e.g. a merge landed meanwhile):
           # keep our two files, take the branch's newest commit, commit them on top again.
           SAVE="$RUNNER_TEMP/latest-video"

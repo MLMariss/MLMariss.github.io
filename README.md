@@ -85,16 +85,18 @@ address. This repo only owns the root.
 
 - `latest-video.jpg`: the newest long video's thumbnail, copied from YouTube and resized to
   1280×720 (JPEG quality 82). The background of the click-to-play panel.
-- `latest-video.json`: that video's `id`, `title`, `published` date and `url`. The page reads the
-  title from it for the panel's label.
+- `latest-video.json`: that video's `id`, `title`, `published` date, `url` and
+  `thumbnail_sha256` (a fingerprint of the thumbnail YouTube served, used to spot a changed
+  thumbnail). The page reads the title from it for the panel's label.
 - `.github/workflows/latest-video.yml`: refreshes both files every 3 hours, or on demand from the
-  Actions tab ("Run workflow"; tick *force* to pick up a title or thumbnail edited after upload).
-  It commits only when the newest video's id has changed. It also runs when its own files change
-  on a `claude/` branch, so a pull request that changes it carries real output.
+  Actions tab ("Run workflow"). It commits only when something changed: a new video, or a title
+  or thumbnail edited after upload (the commit message says which). *force* rewrites both files
+  even when nothing changed. It also runs when its own files change on a `claude/` branch, so a
+  pull request that changes it carries real output.
 - `.github/scripts/latest_video.py`: what the workflow runs. It reads the feed of the long-videos
   playlist (`UULF…`) and falls back to the channel feed (skipping Shorts) when that fails or is
   empty. It takes `maxresdefault.jpg`, or `hqdefault.jpg` (cropped to 16:9) when the larger
-  one is missing.
+  one is missing. It downloads the thumbnail on every run to compare its fingerprint.
 - **When YouTube does not answer:** YouTube's feed server sometimes answers 404 to every feed
   for hours. Then both files stay as they are. A scheduled run ends green with a "YouTube
   unavailable" warning on its page, and GitHub sends no email for it. The job fails (and emails)
@@ -119,5 +121,5 @@ address. This repo only owns the root.
 
 **One exception (owner, 2026-11-03):** the `latest-video.yml` workflow commits
 `latest-video.jpg` and `latest-video.json` straight to `main` as `github-actions[bot]` when a new
-long video appears. It stages those two files by name and nothing else. Each such commit
-redeploys the site.
+long video appears, or when the newest one's title or thumbnail changes (owner, 2026-11-06). It
+stages those two files by name and nothing else. Each such commit redeploys the site.
