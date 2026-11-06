@@ -53,8 +53,13 @@ address. This repo only owns the root.
   if `latest-video.json` cannot be read) the label reads "Play the latest videos".
 - **"Free tools":** equal cards side by side (stacked on phones), QTPD first, then the
   Dawnwalker planner.
-- **About:** plain text describing the channel and each tool, with links. This is the text
-  search engines and AI answers can quote, so it states what each thing does in specific terms.
+- **About:** one collapsed entry per item (the channel, then each tool), built with
+  `<details>`. The heading and a one-line summary stay visible; the full text opens on a click.
+  The folded text is real text in the HTML, so search engines and AI answers still read and
+  quote it, while the page stays short for visitors. It states what each thing does in specific
+  terms. The QTPD entry is a short version of QTPD's own text and links to its "Ways to use
+  QTPD" section (`/SteamQTPD/#ways-to-use`): the full keyword-bearing copy lives on the QTPD page,
+  so this page points to it rather than competing with it for the same searches.
 
 ### Search files in this repo
 
@@ -95,8 +100,8 @@ address. This repo only owns the root.
 
 1. Publish the project from its own repo with GitHub Pages (it appears at
    `https://mlmariss.github.io/<RepoName>/`).
-2. Add a card to the "Free tools" section of `index.html` and a short paragraph under
-   "About the tools", and a link in `404.html`.
+2. Add a card to the "Free tools" section of `index.html` and a collapsed entry to the
+   "About" section (heading, one-line summary, a short paragraph), and a link in `404.html`.
 3. Add its sitemap to `robots.txt`: `Sitemap: https://mlmariss.github.io/<RepoName>/sitemap.xml`.
 4. Mention it in the `Person` description and the page's meta description if it changes what
    MLMariss is known for.

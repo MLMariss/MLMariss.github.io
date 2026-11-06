@@ -4,14 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>MLMariss: PC gaming videos and free game tools</title>
-<meta name="description" content="MLMariss: PC gaming videos on YouTube, plus free tools: QTPD ranks Steam games by value per hour, and a skill tree planner for The Blood of Dawnwalker." />
+<meta name="description" content="PC gaming videos on YouTube, plus free tools: QTPD ranks Steam games by quality time per dollar, and a skill tree planner for The Blood of Dawnwalker." />
 <link rel="canonical" href="https://mlmariss.github.io/" />
 <!-- Google Search Console ownership check. Keep it: removing it un-verifies the property. -->
 <meta name="google-site-verification" content="IvYCR0YKDXf-n9wctR5p3lpm84IUgNj_r0MvaYAJ7HE" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="MLMariss" />
 <meta property="og:title" content="MLMariss: PC gaming videos and free game tools" />
-<meta property="og:description" content="PC gaming videos on YouTube, plus free tools: QTPD for Steam value and a skill tree planner for The Blood of Dawnwalker." />
+<meta property="og:description" content="PC gaming videos on YouTube, plus free tools: QTPD, which ranks Steam games by quality time per dollar, and a skill tree planner for The Blood of Dawnwalker." />
 <meta property="og:url" content="https://mlmariss.github.io/" />
 <meta property="og:image" content="https://mlmariss.github.io/og-image.png" />
 <meta property="og:image:width" content="1200" />
@@ -46,7 +46,7 @@
       "name": "MLMariss",
       "url": "https://mlmariss.github.io/",
       "image": "https://mlmariss.github.io/avatar.jpg",
-      "description": "PC gaming YouTube creator covering survival, colony-sim, crafting and vehicle-building games, and maker of free game tools: QTPD, a Steam value ranking, and a skill tree planner for The Blood of Dawnwalker.",
+      "description": "PC gaming YouTube creator covering survival, colony-sim, crafting and vehicle-building games, and maker of free game tools: QTPD, which ranks Steam games by quality time per dollar, and a skill tree planner for The Blood of Dawnwalker.",
       "sameAs": [
         "https://www.youtube.com/@MLMariss",
         "https://www.youtube.com/channel/UCApjzYvBluJ-CB52BfOxhyQ",
@@ -121,11 +121,25 @@
   }
   .section-head{margin:40px 0 4px; font-size:1.3rem}
   .section-lede{margin:0 0 16px; color:var(--muted)}
-  .about{margin-top:40px; color:var(--muted)}
-  .about h2{color:var(--text); font-size:1.1rem; margin:24px 0 6px}
-  .about h3{color:var(--text); font-size:1rem; margin:16px 0 4px}
-  .about p{margin:0 0 10px}
-  .about a{color:var(--gold)}
+  /* About: one collapsed entry per item. The summary line stays visible; the rest is real text in
+     the HTML (search engines and AI crawlers read it) but folded away so the page stays short. */
+  .acc{border-top:1px solid var(--line)}
+  .acc:last-of-type{border-bottom:1px solid var(--line)}
+  .acc summary{position:relative; list-style:none; cursor:pointer; padding:14px 4px 14px 30px}
+  .acc summary::-webkit-details-marker{display:none}
+  .acc summary::before{content:""; position:absolute; left:8px; top:22px; width:7px; height:7px;
+    border-right:2px solid var(--gold); border-bottom:2px solid var(--gold);
+    transform:rotate(-45deg); transition:transform .15s}
+  .acc[open] summary::before{transform:rotate(45deg)}
+  .acc summary:hover h3{text-decoration:underline}
+  .acc summary:focus-visible{outline:2px solid var(--gold); outline-offset:2px; border-radius:6px}
+  .acc h3{display:inline; margin:0; font-size:1rem; color:var(--text)}
+  .acc-sub{display:block; margin-top:2px; color:var(--muted)}
+  .acc-body{padding:0 4px 14px 30px; color:var(--muted)}
+  .acc-body p{margin:0 0 10px}
+  .acc-body p:last-child{margin-bottom:0}
+  .acc-body a{color:var(--gold)}
+  @media (prefers-reduced-motion:reduce){ .acc summary::before{transition:none} }
   .cta{margin-top:auto; padding-top:16px; font-weight:600; color:var(--gold)}
   footer{margin-top:40px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:.9rem}
   footer a{color:var(--gold)}
@@ -160,7 +174,7 @@
   <div class="cards">
     <a class="card" href="https://mlmariss.github.io/SteamQTPD/">
       <h3>QTPD: Quality Time Per Dollar</h3>
-      <p>Ranks Steam games by well-reviewed hours for your money. Filter thousands of games by price, sale, review score, length and tags.</p>
+      <p>Ranks thousands of Steam games by well-reviewed hours per dollar. Find sale deals and Steam Deck games, rank your wishlist, or hide games with microtransactions.</p>
       <span class="cta">Open QTPD →</span>
     </a>
 
@@ -171,26 +185,44 @@
     </a>
   </div>
 
-  <section class="about">
-    <h2>About the channel</h2>
-    <p>MLMariss is a PC gaming channel on YouTube about survival, colony-sim, crafting and
-      vehicle-building games: in-depth guides and build tutorials (Scrap Mechanic among them),
-      tips, and breakdowns of which games are worth buying in each Steam sale and festival.</p>
+  <section class="about" aria-labelledby="about-title">
+    <h2 class="section-head" id="about-title">About</h2>
 
-    <h2>About the tools</h2>
-    <h3>QTPD</h3>
-    <p><a href="https://mlmariss.github.io/SteamQTPD/">QTPD (Quality Time Per Dollar)</a> answers one
-      question: which Steam games give you the most well-reviewed hours for your money? It combines
-      each game's review score with how long it takes to play, divides by the current price, and ranks
-      thousands of Steam games by the result. You can filter by price, discount, review score,
-      length and tags, so it works for a big Steam sale as well as for finding a cheap game to
-      sink a weekend into.</p>
+    <details class="acc">
+      <summary><h3>MLMariss on YouTube</h3><span class="acc-sub">PC gaming guides, tips and Steam sale picks.</span></summary>
+      <div class="acc-body">
+        <p><a href="https://www.youtube.com/@MLMariss">MLMariss</a> is a PC gaming channel on YouTube about
+          survival, colony-sim, crafting and vehicle-building games: in-depth guides and build tutorials
+          (Scrap Mechanic among them), tips, and breakdowns of which games are worth buying in each
+          Steam sale and festival. The free tools on this page were built alongside the videos.</p>
+      </div>
+    </details>
 
-    <h3>Dawnwalker skill tree planner</h3>
-    <p>The <a href="https://mlmariss.github.io/DawnWalker/">skill tree planner for The Blood of Dawnwalker</a>
-      lays out all 54 perks, 9 ultimates and 27 abilities across the Witchcraft, Swordmastery and
-      Vampirism trees. Spend points with the game's real rules (prerequisites, Corruption gates,
-      manuals), pick an ultimate, and share the finished build as a link.</p>
+    <details class="acc">
+      <summary><h3>QTPD: Steam games ranked by quality time per dollar</h3><span class="acc-sub">The Steam games that give you the most well-reviewed hours for your money.</span></summary>
+      <div class="acc-body">
+        <p><a href="https://mlmariss.github.io/SteamQTPD/">QTPD (Quality Time Per Dollar)</a> answers one
+          question: which Steam games give you the most well-reviewed hours for your money? It is a
+          cost-per-hour ranking that also counts quality: each game's review score times its estimated
+          playtime, divided by the current price, across thousands of Steam games. So a long but badly
+          reviewed game does not top the list.</p>
+        <p>Use it to find the best deals in a Steam sale, cheap Steam Deck games, long or short games and
+          hidden gems, to rank your own Steam wishlist by value, or to hide games with microtransactions,
+          Denuvo or kernel anti-cheat.
+          <a href="https://mlmariss.github.io/SteamQTPD/#ways-to-use">All the ways to use QTPD</a> ·
+          <a href="https://mlmariss.github.io/SteamQTPD/how-it-works.html">How QTPD works</a></p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary><h3>The Blood of Dawnwalker skill tree planner</h3><span class="acc-sub">Plan a build across all three skill trees and share it as a link.</span></summary>
+      <div class="acc-body">
+        <p>The <a href="https://mlmariss.github.io/DawnWalker/">skill tree planner for The Blood of Dawnwalker</a>
+          lays out all 54 perks, 9 ultimates and 27 abilities across the Witchcraft, Swordmastery and
+          Vampirism trees. Spend points with the game's real rules (prerequisites, Corruption gates,
+          manuals), pick an ultimate, and share the finished build as a link.</p>
+      </div>
+    </details>
   </section>
 
   <footer>
