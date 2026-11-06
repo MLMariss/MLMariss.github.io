@@ -14,13 +14,23 @@ YouTube before the visitor clicks: the thumbnail is a copy hosted on this site.
      placeholder), crop it to 16:9, resize to 1280x720 and save it at JPEG quality 82.
   4. Write latest-video.json: {"id", "title", "published", "url"}.
 
-Usage: python latest_video.py [--force] [--out DIR]
+When YouTube does not answer (its feed server answers 404 to every feed for hours at a time,
+and the Shorts check or thumbnail can fail the same way), both files stay as they are. With
+--grace, the run then ends with a warning and exit code 0, unless YouTube has not answered
+for that many hours, in which case it fails. --state is the file that remembers when YouTube
+last answered; the workflow keeps it between runs in the Actions cache.
+
+Usage: python latest_video.py [--force] [--out DIR] [--state FILE] [--grace HOURS]
   --force  rewrite both files even when the video id has not changed (to pick up a title or
            thumbnail edited after upload)
   --out    folder to write into (default: the current folder, the repo root in the workflow)
+  --state  file holding the time YouTube last answered (written when it answers)
+  --grace  hours YouTube may stay silent before a run fails (default 0: fail at once)
 """
 
 import argparse
+import datetime
+import http.client
 import io
 import json
 import os
@@ -53,18 +63,20 @@ JPG_NAME = "latest-video.jpg"
 JSON_NAME = "latest-video.json"
 
 
+class Unavailable(Exception):
+    """YouTube did not give an answer we can use (HTTP error, network error, not a feed)."""
+
+
 def log(msg):
     print(msg, flush=True)
 
 
-def get(url):
-    """GET a URL; return (status, body). Raises on network errors, returns HTTP errors."""
-    req = urllib.request.Request(url, headers=HEADERS)
-    try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-            return r.status, r.read()
-    except urllib.error.HTTPError as e:
-        return e.code, e.read()
+def set_output(name, value):
+    """Pass a step output to the workflow (no-op outside GitHub Actions)."""
+    path = os.environ.get("GITHUB_OUTPUT")
+    if path:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write("%s=%s\n" % (name, value))
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -72,29 +84,45 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None  # urllib then raises HTTPError carrying the 3xx status
 
 
+_follow = urllib.request.build_opener()
 _no_redirect = urllib.request.build_opener(_NoRedirect)
+
+
+def get(url, follow_redirects=True):
+    """GET a URL; return (status, body). HTTP errors come back as their status; network
+    errors raise Unavailable."""
+    opener = _follow if follow_redirects else _no_redirect
+    req = urllib.request.Request(url, headers=HEADERS)
+    try:
+        with opener.open(req, timeout=TIMEOUT) as r:
+            return r.status, r.read()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read()
+    except (OSError, http.client.HTTPException) as e:  # DNS, refused, reset, timeout
+        raise Unavailable("network error: %s" % e) from e
 
 
 def is_short(video_id):
     """A video is a Short when /shorts/ID answers 200 itself. Long videos redirect to /watch."""
-    req = urllib.request.Request("https://www.youtube.com/shorts/" + video_id, headers=HEADERS)
-    try:
-        with _no_redirect.open(req, timeout=TIMEOUT) as r:
-            return r.status == 200
-    except urllib.error.HTTPError as e:
-        if 300 <= e.code < 400:
-            return False
-        # Anything else (404, 429, 5xx) is not an answer. Stop rather than guess: a Short in
-        # the panel would show a video the player does not play first.
-        raise RuntimeError("Shorts check for %s answered HTTP %s" % (video_id, e.code))
+    status, _ = get("https://www.youtube.com/shorts/" + video_id, follow_redirects=False)
+    if status == 200:
+        return True
+    if 300 <= status < 400:
+        return False
+    # Anything else (404, 429, 5xx) is not an answer. Stop rather than guess: a Short in
+    # the panel would show a video the player does not play first.
+    raise Unavailable("Shorts check for %s answered HTTP %s" % (video_id, status))
 
 
 def read_feed(url):
-    """Return the feed's entries as dicts, newest first. Raises when the feed is unusable."""
+    """Return the feed's entries as dicts, newest first. Raises Unavailable when unusable."""
     status, body = get(url)
     if status != 200:
-        raise RuntimeError("HTTP %s" % status)
-    root = ET.fromstring(body)
+        raise Unavailable("HTTP %s" % status)
+    try:
+        root = ET.fromstring(body)
+    except ET.ParseError as e:
+        raise Unavailable("not a feed (%s)" % e) from e
     entries = []
     for e in root.findall("atom:entry", NS):
         vid = (e.findtext("yt:videoId", "", NS) or "").strip()
@@ -114,18 +142,24 @@ def newest_video():
         if entries:
             log("Playlist feed: %d entries" % len(entries))
             return entries[0]
+        playlist_problem = "empty"
         log("Playlist feed is empty; falling back to the channel feed")
-    except Exception as exc:  # noqa: BLE001 (any failure means: use the fallback)
+    except Unavailable as exc:
+        playlist_problem = str(exc)
         log("Playlist feed failed (%s); falling back to the channel feed" % exc)
 
-    entries = read_feed(CHANNEL_FEED)
+    try:
+        entries = read_feed(CHANNEL_FEED)
+    except Unavailable as exc:
+        raise Unavailable("playlist feed: %s; channel feed: %s" % (playlist_problem, exc)) from exc
     log("Channel feed: %d entries" % len(entries))
     for entry in entries:
         if is_short(entry["id"]):
             log("  skip Short %s" % entry["id"])
             continue
         return entry
-    raise RuntimeError("no long video in the channel feed")
+    raise Unavailable("playlist feed: %s; channel feed: no long video among its %d entries"
+                      % (playlist_problem, len(entries)))
 
 
 def download_thumbnail(video_id):
@@ -143,7 +177,7 @@ def download_thumbnail(video_id):
             continue
         log("%s: %dx%d" % (name, img.width, img.height))
         return img
-    raise RuntimeError("no thumbnail for %s" % video_id)
+    raise Unavailable("no thumbnail for %s yet" % video_id)
 
 
 def to_16x9(img):
@@ -162,17 +196,74 @@ def to_16x9(img):
     return img.resize(SIZE, Image.LANCZOS)
 
 
+def now_utc():
+    return datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+
+
+def stamp(t):
+    return t.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def read_last_answer(path):
+    """When YouTube last answered, from the state file; None when unknown."""
+    if not path:
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            return datetime.datetime.fromisoformat(f.read().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def write_last_answer(path, t):
+    if not path:
+        return
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(stamp(t) + "\n")
+    set_output("state_changed", "true")
+
+
+def youtube_unavailable(problem, state_path, grace_hours):
+    """Report an outage. Returns the exit code: 0 inside the grace period, else 1."""
+    now = now_utc()
+    last = read_last_answer(state_path)
+    if last is None:
+        # No record (first run, or the cache expired): start counting from this run, so a
+        # long outage still fails the run once the grace period has passed.
+        write_last_answer(state_path, now)
+        since = "no earlier answer on record, so counting from now"
+        hours = 0.0
+    else:
+        hours = (now - last).total_seconds() / 3600
+        since = "it last answered %s (%.0f h ago)" % (stamp(last), hours)
+
+    if grace_hours > 0 and hours < grace_hours:
+        # A ::warning:: line shows on the run's page but sends no email.
+        print("::warning title=YouTube unavailable::%s. Both files are unchanged and the next "
+              "run tries again. %s; runs start failing once that reaches %g h."
+              % (problem, since[0].upper() + since[1:], grace_hours), flush=True)
+        return 0
+    if grace_hours > 0:
+        print("::error title=YouTube unavailable for %.0f hours::%s. Both files are unchanged. "
+              "%s. If this goes on, check the feed URLs in .github/scripts/latest_video.py."
+              % (hours, problem, since[0].upper() + since[1:]), flush=True)
+    else:
+        print("::error title=YouTube unavailable::%s. Both files are unchanged; this is "
+              "usually a YouTube outage, and the next run tries again." % problem, flush=True)
+    return 1
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--out", default=".")
+    ap.add_argument("--state", default=None)
+    ap.add_argument("--grace", type=float, default=0.0)
     args = ap.parse_args()
 
     jpg_path = os.path.join(args.out, JPG_NAME)
     json_path = os.path.join(args.out, JSON_NAME)
-
-    video = newest_video()
-    log("Newest: %s  %s  %r" % (video["id"], video["published"], video["title"]))
 
     old_id = None
     try:
@@ -180,11 +271,20 @@ def main():
             old_id = json.load(f).get("id")
     except (OSError, ValueError):
         pass
-    if old_id == video["id"] and os.path.exists(jpg_path) and not args.force:
+
+    try:
+        video = newest_video()
+        log("Newest: %s  %s  %r" % (video["id"], video["published"], video["title"]))
+        unchanged = old_id == video["id"] and os.path.exists(jpg_path) and not args.force
+        thumb = None if unchanged else to_16x9(download_thumbnail(video["id"]))
+    except Unavailable as exc:
+        return youtube_unavailable(str(exc), args.state, args.grace)
+    write_last_answer(args.state, now_utc())
+
+    if unchanged:
         log("Same video as latest-video.json; nothing to do")
         return 0
 
-    thumb = to_16x9(download_thumbnail(video["id"]))
     thumb.save(jpg_path, "JPEG", quality=QUALITY, optimize=True, progressive=True)
     log("Wrote %s (%d bytes)" % (jpg_path, os.path.getsize(jpg_path)))
 

@@ -95,6 +95,13 @@ address. This repo only owns the root.
   playlist (`UULF…`) and falls back to the channel feed (skipping Shorts) when that fails or is
   empty. It takes `maxresdefault.jpg`, or `hqdefault.jpg` (cropped to 16:9) when the larger
   one is missing.
+- **When YouTube does not answer:** YouTube's feed server sometimes answers 404 to every feed
+  for hours. Then both files stay as they are. A scheduled run ends green with a "YouTube
+  unavailable" warning on its page, and GitHub sends no email for it. The job fails (and emails)
+  only after YouTube has not answered for 48 hours, which means something is really broken,
+  such as a retired feed URL. The time YouTube last answered is a small text file kept between
+  runs in the Actions cache, never committed. Manual and branch runs fail on an outage straight
+  away, since someone is watching them.
 
 ## Adding a new project
 
