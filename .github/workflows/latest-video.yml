@@ -52,8 +52,32 @@ jobs:
       - name: Install Pillow
         run: pip install "pillow>=10"
 
+      # YouTube's feed server answers 404 to every feed for hours at a time. A scheduled run
+      # that meets such an outage ends green with a warning (no email) and changes nothing;
+      # it fails only once YouTube has not answered for 48 hours. The time YouTube last
+      # answered is kept between runs in the Actions cache (a tiny text file, never committed).
+      # Manual and branch runs have no grace period: someone is watching those.
+      - name: Restore when YouTube last answered
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ runner.temp }}/youtube-last-answer.txt
+          key: youtube-last-answer-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: youtube-last-answer-
+
       - name: Fetch the newest long video
-        run: python .github/scripts/latest_video.py ${{ inputs.force && '--force' || '' }}
+        id: fetch
+        run: >-
+          python .github/scripts/latest_video.py
+          --state "$RUNNER_TEMP/youtube-last-answer.txt"
+          ${{ github.event_name == 'schedule' && '--grace 48' || '' }}
+          ${{ inputs.force && '--force' || '' }}
+
+      - name: Remember when YouTube last answered
+        if: ${{ !cancelled() && steps.fetch.outputs.state_changed == 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ runner.temp }}/youtube-last-answer.txt
+          key: youtube-last-answer-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Commit if the video changed
         env:
